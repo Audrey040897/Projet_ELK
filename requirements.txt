@@ -1,0 +1,8 @@
+elasticsearch==8.10.1
+psycopg[binary]==3.2.9
+pandas==2.2.3
+numpy
+jupyterlab==4.4.3
+matplotlib
+sweetviz
+dotenv
