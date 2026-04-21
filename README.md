@@ -209,6 +209,131 @@ curl "http://localhost:9200/movies_clean/_count"
  ----------------------------------------
 la documentation des taches 4 5 6  ici 
 ----------------------------------------
+## F4 - Mapping et qualité des données
+
+### 1. Objectif
+
+L’objectif de cette étape est d’améliorer la structure et la qualité des données dans Elasticsearch afin de :
+
+- optimiser la recherche full-text
+- améliorer les performances des filtres et agrégations
+- structurer les données pour Kibana
+
+Cette étape repose sur trois éléments :
+- un mapping explicite
+- un analyzer personnalisé
+- un contrôle qualité avant et après optimisation
+
+---
+
+## 2. Mapping explicite
+
+Un nouvel index a été créé pour remplacer le mapping automatique d’Elasticsearch.
+
+```bash
+PUT movies_clean_v2
+```
+Mapping utilisé
+
+```json
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "custom_english": {
+          "type": "standard",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "integer" },
+      "title": {
+        "type": "text",
+        "analyzer": "custom_english"
+      },
+      "overview": {
+        "type": "text",
+        "analyzer": "custom_english"
+      },
+      "genres": { "type": "keyword" },
+      "original_language": { "type": "keyword" },
+      "production_companies": { "type": "keyword" },
+      "release_date": { "type": "date" },
+      "budget": { "type": "float" },
+      "revenue": { "type": "float" },
+      "runtime": { "type": "integer" },
+      "vote_average": { "type": "float" },
+      "vote_count": { "type": "integer" },
+      "credits": { "type": "keyword" },
+      "keywords": { "type": "keyword" },
+      "popularity": { "type": "float" }
+    }
+  }
+}
+```
+
+Améliorations apportées : 
+- suppression du mapping automatique
+- définition explicite des types de champs
+- séparation claire des usages : ```text``` pour la recherche full-text
+```keyword``` pour filtres et agrégations, 
+```types numériques``` pour l’analyse statistique
+- meilleure compatibilité avec Kibana
+
+## 3. Analyzer personnalisé
+
+Un analyzer personnalisé a été ajouté pour améliorer la qualité de la recherche textuelle.
+
+```json
+"custom_english": {
+  "type": "standard",
+  "stopwords": "_english_"
+}
+```
+Objectif : 
+- suppression des mots vides (stopwords)
+- amélioration de la pertinence des recherches sur les champs textuels : `title`, `overview`
+
+## 4. Contrôle qualité avant et après
+### 4.1 Avant optimisation (mapping automatique)
+
+Le contrôle qualité a été effectué sur l’index initial `movies_clean`.
+
+#### Vérification du mapping
+```bash
+GET movies_clean/_mapping
+```
+Résultats observés avant optimisation : 
+- mapping automatique Elasticsearch
+- types parfois incohérents
+- duplication de champs (`text` et `keyword`)
+- qualité de recherche limitée
+
+### 4.2 Après optimisation (mapping explicite)
+
+Le nouvel index `movies_clean_v2` a été utilisé pour validation.
+
+#### Vérification du mapping
+
+```bash
+GET movies_clean_v2/_mapping
+GET movies_clean_v2/_search?size=1
+```
+
+Résultats obsevés après optimisation :  
+- mapping structuré et maîtrisé
+- types de données cohérents
+- amélioration de la qualité des recherches
+- index adapté à l’analyse et à Kibana
+
+------------------------------------
+## F5 — Requêtes analytiques Elasticsearch (DSL)
+- [Documentation tache 5](docs/requetes.md)
+------------------------------------
+
 ## 📚 Documentation
 
 - [Runbook technique](docs/runbook.md)
