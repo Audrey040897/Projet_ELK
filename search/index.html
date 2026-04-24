@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎬 Movies Search Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --card: #1a1a26;
+      --border: #2a2a3d;
+      --accent: #e8c84a;
+      --accent2: #e8634a;
+      --text: #e8e8f0;
+      --muted: #6b6b8a;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+
+    .logo span { color: var(--accent2); }
+
+    .badge {
+      background: var(--accent);
+      color: #000;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+
+    /* HERO */
+    .hero {
+      padding: 60px 40px 40px;
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 8vw, 80px);
+      letter-spacing: 4px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 em {
+      color: var(--accent);
+      font-style: normal;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 40px;
+    }
+
+    /* SEARCH BAR */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      opacity: 0.5;
+    }
+
+    #searchInput {
+      width: 100%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 50px;
+      padding: 18px 24px 18px 52px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #searchInput:focus { border-color: var(--accent); }
+    #searchInput::placeholder { color: var(--muted); }
+
+    /* FILTERS */
+    .filters {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .filter-group label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding-left: 4px;
+    }
+
+    .filter-group select {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .filter-group select:focus { border-color: var(--accent); }
+
+    /* BUTTONS */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    button {
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: none;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    #searchBtn {
+      background: var(--accent);
+      color: #000;
+      padding: 14px 36px;
+      letter-spacing: 0.5px;
+    }
+
+    #searchBtn:hover { background: #f0d460; transform: translateY(-1px); }
+
+    #resetBtn {
+      background: transparent;
+      color: var(--muted);
+      border: 2px solid var(--border);
+      padding: 14px 24px;
+    }
+
+    #resetBtn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* STATS */
+    #statsBar {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      min-height: 20px;
+    }
+
+    #statsBar span { color: var(--accent); font-weight: 500; }
+
+    /* RESULTS */
+    .results-grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 40px 60px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* CARD */
+    .movie-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .movie-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(232, 200, 74, 0.1);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+
+    .movie-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      line-height: 1.2;
+      flex: 1;
+    }
+
+    .movie-score {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .movie-score.poor { background: var(--accent2); }
+    .movie-score.average { background: #6b6b8a; color: #fff; }
+
+    .movie-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      background: var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .tag.lang { color: var(--accent); border: 1px solid var(--accent); background: transparent; }
+    .tag.genre { color: var(--text); }
+    .tag.year { color: var(--accent2); }
+
+    .movie-overview {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* EMPTY / LOADING */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      grid-column: 1 / -1;
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+
+    .empty-state h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p { color: var(--muted); font-size: 14px; }
+
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 60px;
+      grid-column: 1 / -1;
+      color: var(--muted);
+    }
+
+    .loader.active { display: block; }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ERROR */
+    .error-banner {
+      background: rgba(232, 99, 74, 0.1);
+      border: 1px solid var(--accent2);
+      border-radius: var(--radius);
+      padding: 16px 24px;
+      margin: 20px 40px;
+      font-size: 14px;
+      color: var(--accent2);
+      display: none;
+    }
+
+    .error-banner.active { display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">MOVIES <span>SEARCH</span></div>
+  <div class="badge">POWERED BY ELASTICSEARCH</div>
+</header>
+
+<div class="hero">
+  <h1>FIND YOUR <em>NEXT</em> FILM</h1>
+  <p>Recherche full-text sur ~300 000 films • Filtres par genre, langue et année</p>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Titre, synopsis... (ex: Batman, space exploration...)" />
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <label>Genre</label>
+      <select id="filterGenre">
+        <option value="">Tous les genres</option>
+        <option>Action</option>
+        <option>Adventure</option>
+        <option>Animation</option>
+        <option>Comedy</option>
+        <option>Crime</option>
+        <option>Documentary</option>
+        <option>Drama</option>
+        <option>Fantasy</option>
+        <option>Horror</option>
+        <option>Romance</option>
+        <option>Science Fiction</option>
+        <option>Thriller</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Langue</label>
+      <select id="filterLang">
+        <option value="">Toutes les langues</option>
+        <option value="en">🇬🇧 Anglais</option>
+        <option value="fr">🇫🇷 Français</option>
+        <option value="es">🇪🇸 Espagnol</option>
+        <option value="de">🇩🇪 Allemand</option>
+        <option value="ja">🇯🇵 Japonais</option>
+        <option value="ko">🇰🇷 Coréen</option>
+        <option value="it">🇮🇹 Italien</option>
+        <option value="pt">🇵🇹 Portugais</option>
+        <option value="zh">🇨🇳 Chinois</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Année</label>
+      <select id="filterYear">
+        <option value="">Toutes les années</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Note minimum</label>
+      <select id="filterVote">
+        <option value="">Toutes les notes</option>
+        <option value="8">⭐⭐⭐⭐⭐ 8+</option>
+        <option value="7">⭐⭐⭐⭐ 7+</option>
+        <option value="6">⭐⭐⭐ 6+</option>
+        <option value="5">⭐⭐ 5+</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button id="searchBtn">🎬 RECHERCHER</button>
+    <button id="resetBtn">Réinitialiser</button>
+  </div>
+
+  <div id="statsBar"></div>
+</div>
+
+<div class="error-banner" id="errorBanner">
+  ⚠️ Impossible de joindre Elasticsearch sur <strong>http://localhost:9200</strong>. Vérifiez que la stack est démarrée avec <code>./start.sh</code>
+</div>
+
+<div class="results-grid" id="resultsGrid">
+  <div class="empty-state">
+    <div class="icon">🎬</div>
+    <h3>PRÊT À EXPLORER</h3>
+    <p>Tapez un titre ou un mot-clé pour commencer la recherche</p>
+  </div>
+</div>
+
+<script>
+  const ES_URL = 'http://localhost:9200';
+  const INDEX  = 'movies_clean_v2';
+
+  // Remplir les années
+  const yearSelect = document.getElementById('filterYear');
+  for (let y = 2024; y >= 1900; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    yearSelect.appendChild(opt);
+  }
+
+  // Animation décalée des cartes
+  function animateCards() {
+    document.querySelectorAll('.movie-card').forEach((card, i) => {
+      card.style.animationDelay = `${i * 0.05}s`;
+    });
+  }
+
+  function getScoreClass(score) {
+    if (score >= 7) return '';
+    if (score >= 5) return 'average';
+    return 'poor';
+  }
+
+  function buildQuery() {
+    const q      = document.getElementById('searchInput').value.trim();
+    const genre  = document.getElementById('filterGenre').value;
+    const lang   = document.getElementById('filterLang').value;
+    const year   = document.getElementById('filterYear').value;
+    const vote   = document.getElementById('filterVote').value;
+
+    const must    = [];
+    const filter  = [];
+
+    // Recherche full-text
+    if (q) {
+      must.push({
+        multi_match: {
+          query: q,
+          fields: ['title^3', 'overview'],
+          type: 'best_fields',
+          fuzziness: 'AUTO'
+        }
+      });
+    }
+
+    // Filtres exacts
+    if (genre) filter.push({ term: { genres: genre } });
+    if (lang)  filter.push({ term: { original_language: lang } });
+    if (year)  filter.push({ term: { release_year: parseInt(year) } });
+    if (vote)  filter.push({ range: { vote_average: { gte: parseFloat(vote) } } });
+
+    const query = (must.length || filter.length)
+      ? { bool: { must, filter } }
+      : { match_all: {} };
+
+    return {
+      query,
+      size: 24,
+      sort: q ? ['_score'] : [{ popularity: 'desc' }],
+      _source: ['title', 'overview', 'genres', 'original_language',
+                'release_year', 'vote_average', 'vote_count',
+                'runtime', 'popularity', 'era', 'vote_band']
+    };
+  }
+
+  function renderCard(src) {
+    const score     = src.vote_average ? src.vote_average.toFixed(1) : 'N/A';
+    const scoreClass = getScoreClass(src.vote_average);
+    const genres    = Array.isArray(src.genres)
+                      ? src.genres.slice(0, 3).map(g => `<span class="tag genre">${g}</span>`).join('')
+                      : '';
+    const langMap   = { en:'🇬🇧', fr:'🇫🇷', es:'🇪🇸', de:'🇩🇪',
+                        ja:'🇯🇵', ko:'🇰🇷', it:'🇮🇹', pt:'🇵🇹', zh:'🇨🇳' };
+    const flag      = langMap[src.original_language] || '🌍';
+    const overview  = src.overview || '<em>Aucun synopsis disponible</em>';
+    const runtime   = src.runtime ? `${src.runtime} min` : '';
+    const votes     = src.vote_count ? `${src.vote_count.toLocaleString()} votes` : '';
+
+    return `
+      <div class="movie-card">
+        <div class="card-top">
+          <div class="movie-title">${src.title || 'Sans titre'}</div>
+          <div class="movie-score ${scoreClass}">⭐ ${score}</div>
+        </div>
+        <div class="movie-meta">
+          <span class="tag lang">${flag} ${(src.original_language || '').toUpperCase()}</span>
+          ${src.release_year ? `<span class="tag year">${src.release_year}</span>` : ''}
+          ${src.era ? `<span class="tag">${src.era}</span>` : ''}
+          ${genres}
+        </div>
+        <div class="movie-overview">${overview}</div>
+        <div class="card-footer">
+          <span>${runtime}</span>
+          <span>${votes}</span>
+        </div>
+      </div>`;
+  }
+
+  async function search() {
+    const grid   = document.getElementById('resultsGrid');
+    const stats  = document.getElementById('statsBar');
+    const error  = document.getElementById('errorBanner');
+
+    // Loader
+    grid.innerHTML = `<div class="loader active"><div class="spinner"></div>Recherche en cours...</div>`;
+    stats.innerHTML = '';
+    error.classList.remove('active');
+
+    try {
+      const t0  = Date.now();
+      const res = await fetch(`${ES_URL}/${INDEX}/_search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildQuery())
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data  = await res.json();
+      const hits  = data.hits.hits;
+      const total = data.hits.total.value;
+      const ms    = Date.now() - t0;
+
+      stats.innerHTML = total > 0
+        ? `<span>${total.toLocaleString()}</span> films trouvés en <span>${ms}ms</span>`
+        : '';
+
+      if (hits.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🔍</div>
+            <h3>AUCUN RÉSULTAT</h3>
+            <p>Essayez d'autres mots-clés ou modifiez vos filtres</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = hits.map(h => renderCard(h._source)).join('');
+      animateCards();
+
+    } catch (err) {
+      grid.innerHTML = '';
+      error.classList.add('active');
+      stats.innerHTML = '';
+    }
+  }
+
+  function reset() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterGenre').value = '';
+    document.getElementById('filterLang').value  = '';
+    document.getElementById('filterYear').value  = '';
+    document.getElementById('filterVote').value  = '';
+    document.getElementById('statsBar').innerHTML = '';
+    document.getElementById('resultsGrid').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🎬</div>
+        <h3>PRÊT À EXPLORER</h3>
+        <p>Tapez un titre ou un mot-clé pour commencer la recherche</p>
+      </div>`;
+  }
+
+  // Events
+  document.getElementById('searchBtn').addEventListener('click', search);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') search();
+  });
+</script>
+</body>
+</html>

@@ -206,9 +206,6 @@ curl "http://localhost:9200/movies_raw/_count"
 curl "http://localhost:9200/movies_clean/_count"
 ```
 ---
- ----------------------------------------
-la documentation des taches 4 5 6  ici 
-----------------------------------------
 ## F4 - Mapping et qualité des données
 
 ### 1. Objectif
@@ -329,39 +326,26 @@ Résultats obsevés après optimisation :
 - amélioration de la qualité des recherches
 - index adapté à l’analyse et à Kibana
 
-------------------------------------
+
 ## F5 — Requêtes analytiques Elasticsearch (DSL)
-- [Documentation tache 5](docs/requetes.md)
-------------------------------------
 
-## 📚 Documentation
+### Objectif
 
-- [Runbook technique](docs/runbook.md)
-- [Dictionnaire de données](docs/data_dictionary.md)
-- [Documentation nettoyage](docs/data_cleaning.md)
-- [Planning Poker](docs/planning_poker.md)
-- [Gestion de projet](docs/project_management.md)
+Cette étape vise à exploiter les données de l’index `movies_clean_v2` afin de :
 
----
+- tester le moteur de recherche Elasticsearch ;
+- analyser les tendances cinéma ;
+- alimenter les visualisations Kibana ;
+- segmenter les films selon des critères métier.
 
-## 🔍 Moteur de recherche
-
-Un mini moteur de recherche connecté à Elasticsearch permet de :
-- Rechercher un film par titre ou description (full-text)
-- Filtrer par langue, genre ou année de sortie
-
----
-
-## 🎯 Démo
-
-![Démo](docs/demo.gif)
-
-> Voir aussi : [Script de démo](docs/demo_script.md)
+Les 12 requêtes sont classées en trois catégories :
+1. Requêtes de recherche (utilisables dans le moteur de recherche et Kibana Discover)
+2. Requêtes booléennes (au moins 5, pour la segmentation métier)
+3. Requêtes analytiques avec agrégations (pour les visualisations Kibana)
 
 
-------------------------------------
 ## 📊 Dashboard Kibana — F6
-------------------------------------
+
 
 Le dashboard **Movies Data Platform** est disponible dans `docs/kibana/dashboard_export.ndjson`.
 
@@ -381,3 +365,193 @@ Le dashboard **Movies Data Platform** est disponible dans `docs/kibana/dashboard
 3. Cliquer Import
 4. Sélectionner `docs/kibana/dashboard_export.ndjson`
 5. Accéder au dashboard via Analytics → Dashboard → Movies Data Platform
+
+## 📚 Documentation-F7
+
+- [Runbook technique](docs/runbook.md)
+- [Dictionnaire de données](docs/data_dictionary.md)
+- [Documentation nettoyage](docs/data_cleaning.md)
+- [Planning Poker](docs/planning_poker.md)
+- [Gestion de projet](docs/project_management.md)
+
+---
+
+## 🔍 Moteur de recherche — Movies Search Engine-F8
+
+Un mini moteur de recherche connecté à Elasticsearch permet de :
+- Rechercher un film par titre ou description (full-text)
+- Filtrer par langue, genre ou année de sortie
+
+
+## 1. Présentation
+
+Le moteur de recherche est une interface web connectée directement à Elasticsearch.
+Il permet de rechercher parmi **662 083 films** via une interface intuitive et responsive.
+
+---
+
+## 2. Architecture
+
+```
+Navigateur (http://localhost:3000)
+        │
+        ▼
+┌──────────────────┐
+│  search/index.html│  ← Interface HTML/CSS/JS
+└──────────────────┘
+        │
+        │ fetch API (HTTP)
+        ▼
+┌──────────────────┐
+│  Elasticsearch   │  ← Index movies_clean_v2
+│  localhost:9200  │  ← Analyzer custom_english
+└──────────────────┘
+```
+
+---
+
+## 3. Lancement
+
+### Prérequis
+- Stack ELK démarrée via `./start.sh`
+- Index `movies_clean_v2` présent avec 662 083 documents
+
+### Démarrage du serveur
+
+```bash
+# Depuis la racine du projet
+cd search
+python3 -m http.server 3000
+```
+
+### Accès
+Ouvre dans le navigateur : **http://localhost:3000**
+
+---
+
+## 4. Fonctionnalités
+
+### 4.1 Recherche full-text
+
+| Champ | Type | Description |
+|---|---|---|
+| `title` | text | Recherche sur le titre du film (poids x3) |
+| `overview` | text | Recherche dans le synopsis |
+
+La recherche utilise :
+- **multi_match** sur `title` (x3) et `overview`
+- **fuzzy matching** activé (`fuzziness: AUTO`) pour tolérer les fautes de frappe
+- **Analyzer `custom_english`** — supprime les stopwords anglais
+
+### 4.2 Filtres disponibles
+
+| Filtre | Champ ES | Type | Exemples |
+|---|---|---|---|
+| Genre | `genres` | keyword | Action, Drama, Comedy... |
+| Langue | `original_language` | keyword | en, fr, es, de, ja... |
+| Année | `release_year` | integer | 1900 → 2024 |
+| Note minimum | `vote_average` | float | 5+, 6+, 7+, 8+ |
+
+### 4.3 Tri des résultats
+
+| Condition | Tri appliqué |
+|---|---|
+| Avec texte | Par score de pertinence (`_score`) |
+| Sans texte (filtres seuls) | Par popularité décroissante |
+
+---
+
+## 5. Index utilisé
+
+| Propriété | Valeur |
+|---|---|
+| Index | `movies_clean_v2` |
+| Documents | 662 083 |
+| Mapping | Explicite |
+| Analyzer | `custom_english` |
+
+### Champs affichés dans les cartes résultats
+
+| Champ | Description |
+|---|---|
+| `title` | Titre du film |
+| `vote_average` | Note moyenne |
+| `original_language` | Langue avec drapeau |
+| `release_year` | Année de sortie |
+| `era` | Époque (classic, 1990s, 2000s...) |
+| `genres` | Genres (array) |
+| `overview` | Synopsis (3 lignes) |
+| `runtime` | Durée en minutes |
+| `vote_count` | Nombre de votes |
+
+---
+
+## 6. Exemple de requête générée
+
+Recherche **"Batman"** avec filtre **Action** et note **7+** :
+
+```json
+POST movies_clean_v2/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "multi_match": {
+            "query": "Batman",
+            "fields": ["title^3", "overview"],
+            "type": "best_fields",
+            "fuzziness": "AUTO"
+          }
+        }
+      ],
+      "filter": [
+        { "term": { "genres": "Action" } },
+        { "range": { "vote_average": { "gte": 7.0 } } }
+      ]
+    }
+  },
+  "size": 24,
+  "sort": ["_score"]
+}
+```
+
+---
+
+## 7. Performances observées
+
+| Requête | Résultats | Temps |
+|---|---|---|
+| "Batman" (sans filtre) | 777 films | ~98ms |
+| "Batman" + Action + 7+ | ~50 films | ~45ms |
+| "space exploration" | ~200 films | ~120ms |
+
+---
+
+## 8. Limitations connues
+
+- Maximum **24 résultats** par recherche (pas de pagination)
+- Nécessite que la stack soit démarrée localement
+- Pas de recherche par acteur (champ `credits` non exposé dans l'UI)
+- L'interface est en anglais/français mixte
+
+---
+
+## 9. Améliorations possibles
+
+- Pagination des résultats
+- Recherche par acteur (`credits`)
+- Affichage des affiches de films via TMDB API
+- Scoring personnalisé (boost par popularité)
+- Comparaison de plusieurs analyzers
+- Suggestions automatiques (autocomplete)
+---
+
+## 🎯 Démo
+
+![Démo](docs/demo.gif)
+
+> Voir aussi : [Script de démo](docs/script_demo.md)
+
+
+
