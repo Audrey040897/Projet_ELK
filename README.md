@@ -357,3 +357,27 @@ Un mini moteur de recherche connecté à Elasticsearch permet de :
 ![Démo](docs/demo.gif)
 
 > Voir aussi : [Script de démo](docs/demo_script.md)
+
+
+------------------------------------
+## 📊 Dashboard Kibana — F6
+------------------------------------
+
+Le dashboard **Movies Data Platform** est disponible dans `docs/kibana/dashboard_export.ndjson`.
+
+### Visualisations créées
+1. **Films par décennie** — Bar chart : évolution de la production par décennie
+2. **Répartition des notes** — Donut : distribution des vote_band (poor/average/good/excellent)
+3. **Top genres les plus populaires** — Bar horizontal : les genres les plus représentés
+4. **Évolution du nombre de films par année** — Line chart : tendance de production depuis 1900
+5. **Répartition par popularité** — Pie : distribution des popularity_band
+6. **Budget moyen par décennie** — Bar chart : évolution des budgets dans le temps
+7. **Note moyenne par genre** — Bar horizontal : genres les mieux notés
+8. **Durée moyenne par genre** — Bar horizontal : genres les plus longs
+
+### Importer le dashboard
+1. Ouvrir Kibana : http://localhost:5601
+2. Menu → Stack Management → Saved Objects
+3. Cliquer Import
+4. Sélectionner `docs/kibana/dashboard_export.ndjson`
+5. Accéder au dashboard via Analytics → Dashboard → Movies Data Platform
