@@ -1,0 +1,120 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - http.cors.enabled=true
+      - http.cors.allow-origin="*"
+      - http.cors.allow-methods=OPTIONS,HEAD,GET,POST,PUT,DELETE
+      - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.2
+    container_name: logstash
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+    ports:
+      - "9600:9600"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./DATA:/data:ro
+      - ./logs:/usr/share/logstash/logs:ro
+    networks:
+      - elk
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=elk_course
+      - POSTGRES_USER=elk
+      - POSTGRES_PASSWORD=elkpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elk -d elk_course"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  jupyter:
+    image: jupyter/minimal-notebook:python-3.11
+    container_name: jupyter
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - JUPYTER_TOKEN=elasticlab
+      - COURSE_ES_URL=http://elasticsearch:9200
+      - COURSE_PG_HOST=postgres
+      - COURSE_PG_DB=elk_course
+      - COURSE_PG_USER=elk
+      - COURSE_PG_PASSWORD=elkpass
+      - COURSE_DATA_DIR=/home/jovyan/data
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./DATA:/home/jovyan/data:ro
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8888/lab')\""]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  es_data:
+  postgres_data:
