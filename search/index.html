@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🎬 Movies Search Engine</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
   <style>
     :root {
       --bg: #0a0a0f;
@@ -27,23 +27,21 @@
       min-height: 100vh;
     }
 
-    /* HEADER */
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 24px 40px;
+      padding: 20px 40px;
       display: flex;
       align-items: center;
       gap: 16px;
       position: sticky;
       top: 0;
-      z-index: 100;
-      backdrop-filter: blur(12px);
+      z-index: 200;
     }
 
     .logo {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
+      font-size: 26px;
       letter-spacing: 2px;
       color: var(--accent);
     }
@@ -60,9 +58,8 @@
       letter-spacing: 1px;
     }
 
-    /* HERO */
     .hero {
-      padding: 60px 40px 40px;
+      padding: 50px 40px 30px;
       max-width: 900px;
       margin: 0 auto;
       text-align: center;
@@ -73,24 +70,16 @@
       font-size: clamp(48px, 8vw, 80px);
       letter-spacing: 4px;
       line-height: 1;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
-    .hero h1 em {
-      color: var(--accent);
-      font-style: normal;
-    }
+    .hero h1 em { color: var(--accent); font-style: normal; }
+    .hero p { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
 
-    .hero p {
-      color: var(--muted);
-      font-size: 15px;
-      margin-bottom: 40px;
-    }
-
-    /* SEARCH BAR */
+    /* AUTOCOMPLETE WRAPPER */
     .search-wrap {
       position: relative;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .search-icon {
@@ -100,6 +89,7 @@
       transform: translateY(-50%);
       font-size: 18px;
       opacity: 0.5;
+      z-index: 2;
     }
 
     #searchInput {
@@ -113,10 +103,61 @@
       font-size: 16px;
       outline: none;
       transition: border-color 0.2s;
+      position: relative;
+      z-index: 2;
     }
 
     #searchInput:focus { border-color: var(--accent); }
     #searchInput::placeholder { color: var(--muted); }
+
+    /* SUGGESTIONS DROPDOWN */
+    #suggestions {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      z-index: 300;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    }
+
+    #suggestions.active { display: block; }
+
+    .suggestion-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      transition: background 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: var(--border); }
+
+    .suggestion-item .s-icon { font-size: 16px; opacity: 0.6; }
+
+    .suggestion-item .s-title {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .suggestion-item .s-title mark {
+      background: transparent;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .suggestion-item .s-meta {
+      font-size: 11px;
+      color: var(--muted);
+    }
 
     /* FILTERS */
     .filters {
@@ -132,7 +173,7 @@
       flex-direction: column;
       gap: 4px;
       flex: 1;
-      min-width: 160px;
+      min-width: 155px;
     }
 
     .filter-group label {
@@ -147,7 +188,7 @@
       background: var(--card);
       border: 2px solid var(--border);
       border-radius: var(--radius);
-      padding: 12px 16px;
+      padding: 11px 14px;
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
       font-size: 14px;
@@ -157,6 +198,28 @@
     }
 
     .filter-group select:focus { border-color: var(--accent); }
+
+    /* SYNONYMS HINT */
+    .synonyms-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .synonyms-hint span {
+      background: var(--border);
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin: 0 3px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .synonyms-hint span:hover {
+      background: var(--accent);
+      color: #000;
+    }
 
     /* BUTTONS */
     .btn-row {
@@ -180,7 +243,6 @@
       background: var(--accent);
       color: #000;
       padding: 14px 36px;
-      letter-spacing: 0.5px;
     }
 
     #searchBtn:hover { background: #f0d460; transform: translateY(-1px); }
@@ -215,15 +277,12 @@
       gap: 20px;
     }
 
-    /* CARD */
     .movie-card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 24px;
+      padding: 22px;
       transition: all 0.25s;
-      position: relative;
-      overflow: hidden;
       animation: fadeIn 0.3s ease forwards;
       opacity: 0;
     }
@@ -236,7 +295,7 @@
     .movie-card:hover {
       border-color: var(--accent);
       transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(232, 200, 74, 0.1);
+      box-shadow: 0 12px 40px rgba(232,200,74,0.1);
     }
 
     .card-top {
@@ -263,15 +322,14 @@
       padding: 4px 10px;
       border-radius: 20px;
       white-space: nowrap;
-      flex-shrink: 0;
     }
 
-    .movie-score.poor { background: var(--accent2); }
+    .movie-score.poor    { background: var(--accent2); color: #fff; }
     .movie-score.average { background: #6b6b8a; color: #fff; }
 
     .movie-meta {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       margin-bottom: 12px;
     }
@@ -282,12 +340,11 @@
       font-size: 11px;
       padding: 3px 10px;
       border-radius: 20px;
-      letter-spacing: 0.5px;
     }
 
-    .tag.lang { color: var(--accent); border: 1px solid var(--accent); background: transparent; }
+    .tag.lang  { color: var(--accent); border: 1px solid var(--accent); background: transparent; }
+    .tag.year  { color: var(--accent2); }
     .tag.genre { color: var(--text); }
-    .tag.year { color: var(--accent2); }
 
     .movie-overview {
       font-size: 13px;
@@ -302,14 +359,14 @@
     .card-footer {
       display: flex;
       justify-content: space-between;
-      margin-top: 16px;
-      padding-top: 16px;
+      margin-top: 14px;
+      padding-top: 14px;
       border-top: 1px solid var(--border);
       font-size: 12px;
       color: var(--muted);
     }
 
-    /* EMPTY / LOADING */
+    /* EMPTY / LOADER */
     .empty-state {
       text-align: center;
       padding: 80px 20px;
@@ -333,7 +390,6 @@
       text-align: center;
       padding: 60px;
       grid-column: 1 / -1;
-      color: var(--muted);
     }
 
     .loader.active { display: block; }
@@ -350,9 +406,8 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ERROR */
     .error-banner {
-      background: rgba(232, 99, 74, 0.1);
+      background: rgba(232,99,74,0.1);
       border: 1px solid var(--accent2);
       border-radius: var(--radius);
       padding: 16px 24px;
@@ -374,11 +429,20 @@
 
 <div class="hero">
   <h1>FIND YOUR <em>NEXT</em> FILM</h1>
-  <p>Recherche full-text sur ~300 000 films • Filtres par genre, langue et année</p>
+  <p>Recherche full-text sur ~662 000 films • Autocomplétion • Synonymes • Filtres avancés</p>
 
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="Titre, synopsis... (ex: Batman, space exploration...)" />
+    <input type="text" id="searchInput" placeholder="Titre, synopsis... (ex: Batman, space exploration...)" autocomplete="off"/>
+    <div id="suggestions"></div>
+  </div>
+
+  <div class="synonyms-hint">
+    Essayez :
+    <span onclick="setQuery('sci fi')">sci fi</span>
+    <span onclick="setQuery('sf')">sf</span>
+    <span onclick="setQuery('heroic fantasy')">heroic fantasy</span>
+    <span onclick="setQuery('romcom')">romcom</span>
   </div>
 
   <div class="filters">
@@ -464,16 +528,13 @@
   const yearSelect = document.getElementById('filterYear');
   for (let y = 2024; y >= 1900; y--) {
     const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y;
+    opt.value = y; opt.textContent = y;
     yearSelect.appendChild(opt);
   }
 
-  // Animation décalée des cartes
-  function animateCards() {
-    document.querySelectorAll('.movie-card').forEach((card, i) => {
-      card.style.animationDelay = `${i * 0.05}s`;
-    });
+  function setQuery(text) {
+    document.getElementById('searchInput').value = text;
+    search();
   }
 
   function getScoreClass(score) {
@@ -482,29 +543,110 @@
     return 'poor';
   }
 
+  // ─── AUTOCOMPLÉTION ────────────────────────────────────────
+  let suggestTimeout = null;
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    clearTimeout(suggestTimeout);
+    const q = e.target.value.trim();
+    if (q.length < 2) {
+      hideSuggestions();
+      return;
+    }
+    suggestTimeout = setTimeout(() => fetchSuggestions(q), 200);
+  });
+
+  document.getElementById('searchInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { hideSuggestions(); search(); }
+    if (e.key === 'Escape') hideSuggestions();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrap')) hideSuggestions();
+  });
+
+  async function fetchSuggestions(q) {
+    try {
+      const res = await fetch(`${ES_URL}/${INDEX}/_search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          size: 6,
+          _source: ['title', 'release_year', 'genres', 'vote_average'],
+          query: {
+            match: {
+              'title.autocomplete': {
+                query: q,
+                operator: 'and'
+              }
+            }
+          }
+        })
+      });
+
+      const data  = await res.json();
+      const hits  = data.hits?.hits || [];
+      renderSuggestions(hits, q);
+    } catch { hideSuggestions(); }
+  }
+
+  function renderSuggestions(hits, q) {
+    const box = document.getElementById('suggestions');
+    if (!hits.length) { hideSuggestions(); return; }
+
+    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+    box.innerHTML = hits.map(h => {
+      const s      = h._source;
+      const title  = (s.title || '').replace(re, '<mark>$1</mark>');
+      const genres = Array.isArray(s.genres) ? s.genres.slice(0,2).join(', ') : '';
+      const score  = s.vote_average ? `⭐ ${s.vote_average.toFixed(1)}` : '';
+      return `
+        <div class="suggestion-item" onclick="selectSuggestion('${(s.title||'').replace(/'/g,"\\'")}')">
+          <span class="s-icon">🎬</span>
+          <span class="s-title">${title}</span>
+          <span class="s-meta">${s.release_year || ''} ${genres} ${score}</span>
+        </div>`;
+    }).join('');
+
+    box.classList.add('active');
+  }
+
+  function selectSuggestion(title) {
+    document.getElementById('searchInput').value = title;
+    hideSuggestions();
+    search();
+  }
+
+  function hideSuggestions() {
+    const box = document.getElementById('suggestions');
+    box.classList.remove('active');
+    box.innerHTML = '';
+  }
+
+  // ─── REQUÊTE PRINCIPALE ────────────────────────────────────
   function buildQuery() {
-    const q      = document.getElementById('searchInput').value.trim();
-    const genre  = document.getElementById('filterGenre').value;
-    const lang   = document.getElementById('filterLang').value;
-    const year   = document.getElementById('filterYear').value;
-    const vote   = document.getElementById('filterVote').value;
+    const q     = document.getElementById('searchInput').value.trim();
+    const genre = document.getElementById('filterGenre').value;
+    const lang  = document.getElementById('filterLang').value;
+    const year  = document.getElementById('filterYear').value;
+    const vote  = document.getElementById('filterVote').value;
 
-    const must    = [];
-    const filter  = [];
+    const must   = [];
+    const filter = [];
 
-    // Recherche full-text
     if (q) {
       must.push({
         multi_match: {
           query: q,
-          fields: ['title^3', 'overview'],
+          fields: ['title^4', 'title.english^3', 'overview^2', 'overview.english'],
           type: 'best_fields',
-          fuzziness: 'AUTO'
+          fuzziness: 'AUTO',
+          analyzer: 'film_text_analyzer'
         }
       });
     }
 
-    // Filtres exacts
     if (genre) filter.push({ term: { genres: genre } });
     if (lang)  filter.push({ term: { original_language: lang } });
     if (year)  filter.push({ term: { release_year: parseInt(year) } });
@@ -525,17 +667,15 @@
   }
 
   function renderCard(src) {
-    const score     = src.vote_average ? src.vote_average.toFixed(1) : 'N/A';
+    const score      = src.vote_average ? src.vote_average.toFixed(1) : 'N/A';
     const scoreClass = getScoreClass(src.vote_average);
-    const genres    = Array.isArray(src.genres)
-                      ? src.genres.slice(0, 3).map(g => `<span class="tag genre">${g}</span>`).join('')
-                      : '';
-    const langMap   = { en:'🇬🇧', fr:'🇫🇷', es:'🇪🇸', de:'🇩🇪',
-                        ja:'🇯🇵', ko:'🇰🇷', it:'🇮🇹', pt:'🇵🇹', zh:'🇨🇳' };
-    const flag      = langMap[src.original_language] || '🌍';
-    const overview  = src.overview || '<em>Aucun synopsis disponible</em>';
-    const runtime   = src.runtime ? `${src.runtime} min` : '';
-    const votes     = src.vote_count ? `${src.vote_count.toLocaleString()} votes` : '';
+    const genres     = Array.isArray(src.genres)
+      ? src.genres.slice(0,3).map(g => `<span class="tag genre">${g}</span>`).join('')
+      : '';
+    const langMap = { en:'🇬🇧',fr:'🇫🇷',es:'🇪🇸',de:'🇩🇪',ja:'🇯🇵',ko:'🇰🇷',it:'🇮🇹',pt:'🇵🇹',zh:'🇨🇳' };
+    const flag    = langMap[src.original_language] || '🌍';
+    const runtime = src.runtime ? `${src.runtime} min` : '';
+    const votes   = src.vote_count ? `${src.vote_count.toLocaleString()} votes` : '';
 
     return `
       <div class="movie-card">
@@ -544,12 +684,12 @@
           <div class="movie-score ${scoreClass}">⭐ ${score}</div>
         </div>
         <div class="movie-meta">
-          <span class="tag lang">${flag} ${(src.original_language || '').toUpperCase()}</span>
+          <span class="tag lang">${flag} ${(src.original_language||'').toUpperCase()}</span>
           ${src.release_year ? `<span class="tag year">${src.release_year}</span>` : ''}
           ${src.era ? `<span class="tag">${src.era}</span>` : ''}
           ${genres}
         </div>
-        <div class="movie-overview">${overview}</div>
+        <div class="movie-overview">${src.overview || '<em>Aucun synopsis disponible</em>'}</div>
         <div class="card-footer">
           <span>${runtime}</span>
           <span>${votes}</span>
@@ -558,11 +698,11 @@
   }
 
   async function search() {
-    const grid   = document.getElementById('resultsGrid');
-    const stats  = document.getElementById('statsBar');
-    const error  = document.getElementById('errorBanner');
+    hideSuggestions();
+    const grid  = document.getElementById('resultsGrid');
+    const stats = document.getElementById('statsBar');
+    const error = document.getElementById('errorBanner');
 
-    // Loader
     grid.innerHTML = `<div class="loader active"><div class="spinner"></div>Recherche en cours...</div>`;
     stats.innerHTML = '';
     error.classList.remove('active');
@@ -586,7 +726,7 @@
         ? `<span>${total.toLocaleString()}</span> films trouvés en <span>${ms}ms</span>`
         : '';
 
-      if (hits.length === 0) {
+      if (!hits.length) {
         grid.innerHTML = `
           <div class="empty-state">
             <div class="icon">🔍</div>
@@ -597,12 +737,13 @@
       }
 
       grid.innerHTML = hits.map(h => renderCard(h._source)).join('');
-      animateCards();
+      document.querySelectorAll('.movie-card').forEach((c, i) => {
+        c.style.animationDelay = `${i * 0.04}s`;
+      });
 
-    } catch (err) {
+    } catch {
       grid.innerHTML = '';
       error.classList.add('active');
-      stats.innerHTML = '';
     }
   }
 
@@ -613,6 +754,7 @@
     document.getElementById('filterYear').value  = '';
     document.getElementById('filterVote').value  = '';
     document.getElementById('statsBar').innerHTML = '';
+    hideSuggestions();
     document.getElementById('resultsGrid').innerHTML = `
       <div class="empty-state">
         <div class="icon">🎬</div>
@@ -621,12 +763,8 @@
       </div>`;
   }
 
-  // Events
   document.getElementById('searchBtn').addEventListener('click', search);
   document.getElementById('resetBtn').addEventListener('click', reset);
-  document.getElementById('searchInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') search();
-  });
 </script>
 </body>
 </html>
