@@ -124,8 +124,12 @@ Projet_ELK/
 │   └── Data_mining.ipynb           ← analyse exploratoire ydata-profiling
 │
 └── docs/
-    ├── runbook.md  
-    ├── requetes.md                   ← guide de lancement technique
+    ├── runbook.md  ← guide de lancement technique
+    ├── requetes.md   
+    ├── script_demo.md 
+    ├── demo_gif.md 
+    ├── kibana 
+    ├    └── dashboard_export.ndjson                
     ├── data_dictionary.md          ← dictionnaire des 20 champs
     ├── data_cleaning.md            ← règles de nettoyage + impact avant/après
     ├── planning_poker.md           ← estimation des features
@@ -236,39 +240,103 @@ Mapping utilisé
 {
   "settings": {
     "analysis": {
+      "filter": {
+        "film_elision_fr": {
+          "type": "elision",
+          "articles_case": true,
+          "articles": ["l", "d", "c", "j", "m", "n", "s", "t", "qu"]
+        },
+        "film_stop_fr": {
+          "type": "stop",
+          "stopwords": ["le", "la", "les", "de", "du", "des"]
+        },
+        "film_synonyms": {
+          "type": "synonym",
+          "synonyms": [
+            "sci fi, science fiction",
+            "sf, science fiction",
+            "heroic fantasy, fantasy",
+            "romcom, comedie romantique"
+          ]
+        }
+      },
+      "tokenizer": {
+        "film_autocomplete_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 15,
+          "token_chars": ["letter", "digit"]
+        }
+      },
       "analyzer": {
         "custom_english": {
           "type": "standard",
           "stopwords": "_english_"
+        },
+        "film_text_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "film_elision_fr",
+            "asciifolding",
+            "film_stop_fr",
+            "film_synonyms"
+          ]
+        },
+        "film_autocomplete": {
+          "type": "custom",
+          "tokenizer": "film_autocomplete_tokenizer",
+          "filter": ["lowercase", "asciifolding"]
         }
       }
     }
   },
   "mappings": {
     "properties": {
-      "id": { "type": "integer" },
+      "id":                   { "type": "integer" },
       "title": {
         "type": "text",
-        "analyzer": "custom_english"
+        "analyzer": "film_text_analyzer",
+        "fields": {
+          "english":       { "type": "text", "analyzer": "custom_english" },
+          "autocomplete":  { "type": "text", "analyzer": "film_autocomplete", "search_analyzer": "standard" },
+          "keyword":       { "type": "keyword" }
+        }
       },
       "overview": {
         "type": "text",
-        "analyzer": "custom_english"
+        "analyzer": "film_text_analyzer",
+        "fields": {
+          "english": { "type": "text", "analyzer": "custom_english" }
+        }
       },
-      "genres": { "type": "keyword" },
-      "original_language": { "type": "keyword" },
+      "tagline":              { "type": "text", "analyzer": "film_text_analyzer" },
+      "genres":               { "type": "keyword" },
+      "original_language":    { "type": "keyword" },
       "production_companies": { "type": "keyword" },
-      "release_date": { "type": "date" },
-      "budget": { "type": "float" },
-      "revenue": { "type": "float" },
-      "runtime": { "type": "integer" },
-      "vote_average": { "type": "float" },
-      "vote_count": { "type": "integer" },
-      "credits": { "type": "keyword" },
-      "keywords": { "type": "keyword" },
-      "popularity": { "type": "float" }
+      "credits":              { "type": "keyword" },
+      "keywords":             { "type": "keyword" },
+      "status":               { "type": "keyword" },
+      "poster_path":          { "type": "keyword" },
+      "backdrop_path":        { "type": "keyword" },
+      "recommendations":      { "type": "keyword" },
+      "release_date":         { "type": "date" },
+      "release_year":         { "type": "integer" },
+      "decade":               { "type": "integer" },
+      "budget":               { "type": "float" },
+      "revenue":              { "type": "float" },
+      "runtime":              { "type": "integer" },
+      "vote_average":         { "type": "float" },
+      "vote_count":           { "type": "integer" },
+      "popularity":           { "type": "float" },
+      "title_length":         { "type": "integer" },
+      "era":                  { "type": "keyword" },
+      "vote_band":            { "type": "keyword" },
+      "popularity_band":      { "type": "keyword" }
     }
   }
+  
 }
 ```
 
@@ -282,18 +350,46 @@ Améliorations apportées :
 
 ## 3. Analyzer personnalisé
 
-Un analyzer personnalisé a été ajouté pour améliorer la qualité de la recherche textuelle.
+Des analyzer personnalisé a été ajouté pour améliorer la qualité de la recherche textuelle.
 
 ```json
 "custom_english": {
   "type": "standard",
   "stopwords": "_english_"
 }
+
+"film_text_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "film_elision_fr",
+            "asciifolding",
+            "film_stop_fr",
+            "film_synonyms"
+          ]
+        }
+
+ "film_autocomplete": {
+          "type": "custom",
+          "tokenizer": "film_autocomplete_tokenizer",
+          "filter": ["lowercase", "asciifolding"]
+        }
+
 ```
+
 Objectif : 
 - suppression des mots vides (stopwords)
 - amélioration de la pertinence des recherches sur les champs textuels : `title`, `overview`
 
+- **Pour tester l'analyseur** 
+```bash
+  GET movies_clean_v2/_analyze
+{
+  "analyzer": "custom_english",
+  "text": "The Fabulous Destiny of Amélie Poulain"
+}
+```
 ## 4. Contrôle qualité avant et après
 ### 4.1 Avant optimisation (mapping automatique)
 
@@ -442,6 +538,8 @@ La recherche utilise :
 - **multi_match** sur `title` (x3) et `overview`
 - **fuzzy matching** activé (`fuzziness: AUTO`) pour tolérer les fautes de frappe
 - **Analyzer `custom_english`** — supprime les stopwords anglais
+- **Analyseur `film_text_analyzer`**  — élision française + synonymes + asciifolding
+- **Analyseur `film_autocomplete`**  — edge_ngram pour l'autocomplétion
 
 ### 4.2 Filtres disponibles
 
@@ -544,7 +642,6 @@ POST movies_clean_v2/_search
 - Affichage des affiches de films via TMDB API
 - Scoring personnalisé (boost par popularité)
 - Comparaison de plusieurs analyzers
-- Suggestions automatiques (autocomplete)
 ---
 
 ## 🎯 Démo
