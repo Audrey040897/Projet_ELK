@@ -650,5 +650,6 @@ POST movies_clean_v2/_search
 
 > Voir aussi : [Script de démo](docs/script_demo.md)
 
+> Voir aussi : [GIF Pipeline Projet ELK](/docs/Pipeline_ELK_Complet.gif)
 
 
