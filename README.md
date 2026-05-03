@@ -646,9 +646,10 @@ POST movies_clean_v2/_search
 
 ## 🎯 Démo
 
-![Démo](docs/demo.gif)
+![Démo](./docs/Pipeline_ELK_Complet.gif)
 
 > Voir aussi : [Script de démo](docs/script_demo.md)
 
+> Voir aussi : [GIF Pipeline Projet ELK](/docs/Pipeline_ELK_Complet.gif)
 
 
